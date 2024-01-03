@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waddle: Log In</title>
+<script type="module" src="./script-login.ts"></script>
+<body>
+<link rel="stylesheet" href="/style.css">
+<section>
+	<h1 class="tabs"><a href="signup" class="tab">Sign Up</a><span class="tab tab-active">Login</span></h1>
+
+	<form method="dialog">
+		<fieldset>
+			<label>
+				<span>Username:</span>
+				<input
+					id="input-username"
+					name="username"
+					required
+					pattern="[a-zA-Z][a-zA-Z0-9_]{2,319}"
+					minlength="3"
+					maxlength="320"
+					spellcheck="false"
+					autocomplete="username"
+					placeholder=" " />
+			</label>
+			<hr />
+			<label>
+				<span>Password:</span>
+				<input
+					id="input-password"
+					type="password"
+					required
+					minlength="10"
+					placeholder=" "
+					autocomplete="current-password" />
+			</label>
+			<hr />
+			<label>
+				<button id="button-login" disabled>Log in</button>
+			</label>
+			<noscript>
+				The Waddle website requires JavaScript to be enabled.
+			</noscript>
+		</fieldset>
+	</form>
+
+	<section id="submit-result" style="display: none">
+	</section>
+</section>

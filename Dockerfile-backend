@@ -1,0 +1,10 @@
+FROM node:21-slim
+WORKDIR /app
+COPY ./apis/ ./apis/
+COPY ./backend/ ./backend/
+
+WORKDIR backend
+RUN yarn install --production
+RUN yarn run cloudbuild
+
+EXPOSE 443/tcp

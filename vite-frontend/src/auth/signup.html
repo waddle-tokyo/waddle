@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waddle: Sign Up</title>
+<script type="module" src="./script-signup.ts"></script>
+<body>
+<link rel="stylesheet" href="/style.css">
+<section>
+	<h1 class="tabs"><span class="tab tab-active">Sign Up</span><a href="login" class="tab">Login</a></h1>
+
+	<form method="dialog">
+		<fieldset>
+			<label>
+				<span>Invitation code:</span>
+				<input
+					id="input-invitation"
+					disabled
+					required
+					title="A code made out of 26 letters and numbers given to you by someone with an account on Waddle"
+					pattern="[A-Za-z0-9]{26}"
+					type="text"
+					placeholder="0123456789ABCDEFGHJKMNPQRS"
+					autocomplete="off"
+					autocapitalize="characters"
+					spellcheck="false"/>
+				<small>Ask someone with an account on Waddle to give you an invitation code.</small>
+			</label>
+			<hr />
+			<label>
+				<span>Username:</span>
+				<input
+					id="input-username"
+					name="username"
+					required
+					pattern="[a-zA-Z][a-zA-Z0-9_]{2,319}"
+					minlength="3"
+					maxlength="320"
+					spellcheck="false"
+					autocomplete="username"
+					placeholder=" " />
+				<small>
+					You will use this ID to log in. Choose an ID that is unique to you.<br />
+					You can use letters, underscores, and digits.
+					You will use this Login ID to log in.<br />
+					Other people will <strong>not</strong> be able see this log in ID.<br />
+				</small>
+			</label>
+			<hr />
+			<label>
+				<span>Password:</span>
+				<input
+					id="input-password"
+					type="password"
+					required
+					minlength="10"
+					placeholder="••••••••••"
+					autocomplete="new-password" />
+				<small>
+					You will use this password to log-in.<br />
+					It must be at least 10 characters long.
+				</small>
+			</label>
+			<hr />
+			<label>
+				<span>Confirm password:</span>
+				<input
+					id="input-passwordconfirm"
+					type="password"
+					required
+					placeholder="••••••••••"
+					autocomplete="new-password" />
+			</label>
+			<hr />
+			<label>
+				<span>Name:</span>
+				<input
+					id="input-name"
+					type="text"
+					required
+					pattern="^[^\r\n\t]*\S[^\r\n\t]*$"
+					minlength="1"
+					maxlength="256"
+					autocomplete="given-name"
+					placeholder=" " />
+				<small>
+					This is the name your friends will see when you join Waddle.<br />
+					People who you do not add as a friend cannot see your name.
+				</small>
+			</label>
+			<hr />
+			<label>
+				<button id="button-signup" disabled>Sign up</button>
+			</label>
+			<noscript>
+				The Waddle website requires JavaScript to be enabled.
+			</noscript>
+		</fieldset>
+	</form>
+
+	<section id="submit-result" style="display: none">
+	</section>
+</section>
