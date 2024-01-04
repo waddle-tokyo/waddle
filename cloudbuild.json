@@ -2,7 +2,7 @@
 	"steps": [
 		{
 			"name": "bash",
-			"script": "#!/usr/bin/env bash\necho \"$BACKEND_CONFIG_JSONC\" > backend/conf.jsonc\n"
+			"script": "#!/usr/bin/env bash\necho \"$_BACKEND_CONFIG_JSONC\" > backend/conf.jsonc\n"
 		},
 		{
 			"name": "gcr.io/cloud-builders/docker",
@@ -48,7 +48,7 @@
 				"managed",
 				"rolling-action",
 				"start-update",
-				"$INSTANCE_GROUP",
+				"$_INSTANCE_GROUP",
 				"--version=template=$_DOCKER_CONTAINER-$SHORT_SHA",
 				"--zone=$_INSTANCE_ZONE"
 			]
