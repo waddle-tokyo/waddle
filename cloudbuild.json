@@ -30,7 +30,7 @@
 				"--network-interface=network=default,network-tier=STANDARD",
 				"--maintenance-policy=MIGRATE",
 				"--tags=http-server,https-server,lb-health-check",
-				"--service-account=$_TEMPLATE_SERVICE_ACCOUNT",
+				"--service-account=$_VM_SVC_ACCOUNT",
 				"--container-image=$_DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$_DOCKER_REGION/$_DOCKER_CONTAINER:$COMMIT_SHA",
 				"--container-restart-policy=always",
 				"--container-command=yarn",
