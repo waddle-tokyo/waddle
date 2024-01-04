@@ -11,9 +11,9 @@
 				"-f",
 				"Dockerfile-backend",
 				"-t",
-				"$DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$DOCKER_REGION/$DOCKER_CONTAINER:$COMMIT_SHA",
+				"$_DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$_DOCKER_REGION/$_DOCKER_CONTAINER:$COMMIT_SHA",
 				"-t",
-				"$DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$DOCKER_REGION/$DOCKER_CONTAINER:latest",
+				"$_DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$_DOCKER_REGION/$_DOCKER_CONTAINER:latest",
 				"."
 			]
 		},
@@ -24,14 +24,14 @@
 				"compute",
 				"instance-templates",
 				"create-with-container",
-				"$DOCKER_CONTAINER-$SHORT_SHA",
+				"$_DOCKER_CONTAINER-$SHORT_SHA",
 				"--project=$PROJECT_ID",
 				"--machine-type=e2-micro",
 				"--network-interface=network=default,network-tier=STANDARD",
 				"--maintenance-policy=MIGRATE",
 				"--tags=http-server,https-server,lb-health-check",
-				"--service-account=$TEMPLATE_SERVICE_ACCOUNT",
-				"--container-image=$DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$DOCKER_REGION/$DOCKER_CONTAINER:$COMMIT_SHA",
+				"--service-account=$_TEMPLATE_SERVICE_ACCOUNT",
+				"--container-image=$_DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$_DOCKER_REGION/$_DOCKER_CONTAINER:$COMMIT_SHA",
 				"--container-restart-policy=always",
 				"--container-command=yarn",
 				"--container-arg=run",
@@ -49,8 +49,8 @@
 				"rolling-action",
 				"start-update",
 				"$INSTANCE_GROUP",
-				"--version=template=$DOCKER_CONTAINER-$SHORT_SHA",
-				"--zone=$INSTANCE_ZONE"
+				"--version=template=$_DOCKER_CONTAINER-$SHORT_SHA",
+				"--zone=$_INSTANCE_ZONE"
 			]
 		}
 	],
@@ -58,7 +58,7 @@
 		"automapSubstitutions": true
 	},
 	"images": [
-		"$DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/$DOCKER_REGION/$DOCKER_CONTAINER"
+		"$_DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/$_DOCKER_REGION/$_DOCKER_CONTAINER"
 	],
-	"logsBucket": "$LOGS_BUCKET"
+	"logsBucket": "$_LOGS_BUCKET"
 }
