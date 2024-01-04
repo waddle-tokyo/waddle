@@ -21,7 +21,7 @@ const configValidator = new v.Records({
 
 const commentedConfigurationString = fs.readFileSync(CONFIG_FILE, "utf-8");
 
-const configurationString = commentedConfigurationString.replace(/\/\/[^\n]*/g, x => x.replace(/./g, " "));
+const configurationString = commentedConfigurationString.replace(/^\s*\/\/[^\n]*/g, x => x.replace(/./g, " "));
 
 const configurationObject = JSON.parse(configurationString);
 
