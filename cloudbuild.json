@@ -15,6 +15,9 @@
 				"-t",
 				"$_DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$_DOCKER_REGION/$_DOCKER_CONTAINER:latest",
 				"."
+			],
+			"images": [
+				"$_DOCKER_REGION-docker.pkg.dev/$PROJECT_ID/docker-$_DOCKER_REGION/$_DOCKER_CONTAINER"
 			]
 		},
 		{
