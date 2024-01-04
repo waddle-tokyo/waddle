@@ -36,7 +36,13 @@ function handleCORS(
 	}
 
 	response.writeHead(403);
-	response.end();
+	const message = {
+		code: 403,
+		reason: "Origin is not allowed.",
+		origin,
+		allowedOrigins: [...ALLOWED_CORS_ORIGINS],
+	};
+	response.end(JSON.stringify(message));
 	return true;
 }
 
