@@ -1,3 +1,4 @@
 .vscode
 compiled/
 node_modules/
+**/*.tsbuildinfo

@@ -7,7 +7,7 @@
 * **`FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_PROJECT_ID` secrets**
     * These can be created using `firebase init hosting:github`.
     * You can manually create a new key from the Google Cloud IAM page:
-        * Choose the service account. It should have `Firebase Authentication Admin`, `Firebase Hosting Admin`, `Cloud Run Viewer`, `API Keys Viewer`, `Cloud Functoins Developer` roles.
+        * Choose the service account. It should have `Firebase Authentication Admin`, `Firebase Hosting Admin`, `Cloud Run Viewer`, `API Keys Viewer`, `Cloud Functions Developer` roles.
         * Navigate to Keys > Add Key > Create new key.
         * Choose JSON
 

@@ -1,14 +1,15 @@
 import * as firebaseApp from "firebase/app";
 import { DiscoveryClient } from "./discovery";
 
-let firebaseConfig = {
-	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-	projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-	storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-	messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-	appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
+const FIREBASE_JSON_PATH = "/__/firebase/init.json";
+
+let firebaseConfig;
+try {
+	firebaseConfig = await (await fetch(FIREBASE_JSON_PATH)).json();
+} catch (e) {
+	console.error("cannot load firebase config from " + FIREBASE_JSON_PATH, e);
+	throw e;
+}
 
 export const app = firebaseApp.initializeApp(firebaseConfig);
 
