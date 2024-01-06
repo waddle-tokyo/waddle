@@ -3,15 +3,17 @@ import * as firestore from "firebase/firestore";
 import { Serializable, serialize } from "../../apis/validator";
 
 export class DiscoveryClient {
-	private db: firestore.Firestore;
+	private db: Promise<firestore.Firestore>;
 	private domains: Set<string> = new Set();
 	private lastRefresh = 0;
 
 	constructor(
 		private serverType: string,
-		firebaseApp: firebaseApp.FirebaseApp,
+		firebaseApp: Promise<firebaseApp.FirebaseApp>,
 	) {
-		this.db = firestore.getFirestore(firebaseApp);
+		this.db = new Promise(resolve => {
+			firebaseApp.then(app => resolve(firestore.getFirestore(app)));
+		});
 	}
 
 	async refreshList(): Promise<void> {
@@ -21,7 +23,7 @@ export class DiscoveryClient {
 		this.lastRefresh = Date.now();
 
 		const query = firestore.query(
-			firestore.collection(this.db, "anon-discovery/"),
+			firestore.collection(await this.db, "anon-discovery/"),
 			firestore.and(
 				firestore.where("type", "==", this.serverType),
 				firestore.where("expires", ">", new Date()),
