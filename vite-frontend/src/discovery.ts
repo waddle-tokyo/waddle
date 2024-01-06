@@ -33,15 +33,24 @@ export class DiscoveryClient {
 		const active = await firestore.getDocs(query);
 
 		const current = [...this.domains];
-		console.info("discovery refreshing available API backends. was:", current, "to check:", active);
+		const activeDomains = active.docs
+			.map(doc => doc.get("domain") as string)
+			.filter(x => typeof x === "string" && x);
+
+		const debugging = [
+			"DiscoveryClient.refreshList:",
+			"\tcurrent list:",
+			...[...current].map(domain => `\t\t${domain}`),
+			"",
+			"\tfetched list:",
+			...[...activeDomains].map(domain => `\t\t${domain}`),
+		];
+		console.info(debugging.join("\n"));
 
 		// Remove bad hosts asynchronously
 		this.checkAllHealth(current);
 
-		const healthy = await this.checkAllHealth(active.docs
-			.map(doc => doc.get("domain") as string)
-			.filter(x => typeof x === "string" && x));
-		console.info("...determined healthy API backends are:", healthy);
+		await this.checkAllHealth(activeDomains);
 	}
 
 	async checkAllHealth(domains: string[]) {

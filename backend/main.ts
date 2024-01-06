@@ -15,12 +15,16 @@ import { config } from "./config.js";
 
 const ALLOWED_CORS_ORIGINS = new Set(config.web.allowedCorsOrigins);
 
+const ANY_ORIGIN_ALLOWED = new Set([
+	"/health",
+]);
+
 function handleCORS(
 	incoming: http.IncomingMessage,
 	response: http.ServerResponse,
 ): boolean {
 	const origin = incoming.headers.origin || "";
-	if (ALLOWED_CORS_ORIGINS.has(origin)) {
+	if (ALLOWED_CORS_ORIGINS.has(origin) || ANY_ORIGIN_ALLOWED.has(incoming.url || "")) {
 		response.setHeader("access-control-allow-origin", origin);
 		response.setHeader("access-control-allow-methods", "POST, GET, OPTIONS, DELETE");
 		response.setHeader("access-control-max-age", "86400");
