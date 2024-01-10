@@ -8,6 +8,8 @@ import * as v from "../apis/validator.js";
 export class ReqContext {
 	public readonly trace: string;
 	private handlerPath: string = "(redacted)";
+	public includeServerTiming: boolean = false;
+	private serverTimings: string[] = [];
 
 	constructor(
 		public incoming: http.IncomingMessage,
@@ -24,6 +26,34 @@ export class ReqContext {
 		console.log(this.prefix() + "\t" + messages.join("\t"));
 	}
 
+	recordTime(name: string, millis: number) {
+		if (/^[a-zA-Z0-9]+$/.test(name)) {
+			throw new Error("illegal metric name");
+		}
+
+		this.serverTimings.push(`${name},dur=${millis.toFixed(1)}`);
+		this.log(name, "took", millis.toFixed(1), "ms");
+	}
+
+	serverTimingHeaders(): Record<string, string> {
+		if (this.includeServerTiming) {
+			return {
+				"server-timing": this.serverTimings.join(", "),
+			};
+		}
+		return {};
+	}
+
+	async measureTime<T>(name: string, work: () => Promise<T>): Promise<T> {
+		const before = performance.now();
+		try {
+			return await work();
+		} finally {
+			const after = performance.now();
+			this.recordTime(name, after - before);
+		}
+	}
+
 	setHandler(handlerPath: string): void {
 		this.handlerPath = handlerPath;
 		this.log("handling", handlerPath);
@@ -38,7 +68,10 @@ export class ReqContext {
 			this.handlerPath,
 		);
 
-		this.response.writeHead(status, headers);
+		this.response.writeHead(status, {
+			...this.serverTimingHeaders(),
+			...headers,
+		});
 		this.response.end();
 	}
 
@@ -60,6 +93,7 @@ export class ReqContext {
 		);
 
 		this.response.writeHead(status, {
+			...this.serverTimingHeaders(),
 			...headers,
 			"content-type": "application/json",
 			"content-length": new TextEncoder().encode(serialized).length,
@@ -88,7 +122,7 @@ export const timestamps = new class TimestampValidator extends v.Validator<Times
 };
 
 export type APIHandler<Req, Resp extends v.Serializable> =
-	(req: APIRequest<Req>) => Promise<APIResponse<Resp>>;
+	(req: APIRequest<Req>, trace: ReqContext) => Promise<APIResponse<Resp>>;
 
 export type APIRequest<Req> = {
 	request: Req,
@@ -133,7 +167,7 @@ export function useHandler<Req, Resp extends v.Serializable>(
 
 			const responseObject = await handler({
 				request: validatedObject,
-			});
+			}, trace);
 
 			trace.endWith(200, responseObject.headers || {}, responseObject.body);
 		} catch (e: unknown) {
