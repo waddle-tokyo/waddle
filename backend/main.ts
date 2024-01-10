@@ -3,15 +3,13 @@ import * as https from "node:https";
 
 import * as gcloudDns from "@google-cloud/dns";
 
+import { config } from "./config.js";
 import { AnonDiscovery, anonDiscoveryPath } from "./db.js";
 import * as handler from "./handler.js";
 import * as implAuthLogin from "./impl/auth/login.js";
 import * as implAuthLoginChallenge from "./impl/auth/loginChallenge.js";
 import * as implAuthSignup from "./impl/auth/signup.js";
 import * as secrets from "./secrets.js";
-import * as v from "../apis/validator.js";
-
-import { config } from "./config.js";
 
 const ALLOWED_CORS_ORIGINS = new Set(config.web.allowedCorsOrigins);
 
@@ -20,33 +18,31 @@ const ANY_ORIGIN_ALLOWED = new Set([
 ]);
 
 function handleCORS(
-	incoming: http.IncomingMessage,
-	response: http.ServerResponse,
+	trace: handler.ReqContext,
 ): boolean {
-	const origin = incoming.headers.origin || "";
-	if (ALLOWED_CORS_ORIGINS.has(origin) || ANY_ORIGIN_ALLOWED.has(incoming.url || "")) {
+	const origin = trace.incoming.headers.origin || "";
+	if (ALLOWED_CORS_ORIGINS.has(origin) || ANY_ORIGIN_ALLOWED.has(trace.incoming.url || "")) {
+		const response = trace.response;
 		response.setHeader("access-control-allow-origin", origin);
 		response.setHeader("access-control-allow-methods", "POST, GET, OPTIONS, DELETE");
 		response.setHeader("access-control-max-age", "86400");
 		response.setHeader("access-control-allow-headers", "Cookie, Content-Type");
 		response.setHeader("access-control-allow-credentials", "true");
 
-		if (incoming.method === "OPTIONS") {
-			response.writeHead(204);
-			response.end();
-			return true;
+		if (trace.incoming.method === "OPTIONS") {
+			trace.endWithEmpty(204, {});
 		}
 		return false;
 	}
 
-	response.writeHead(403);
 	const message = {
 		code: 403,
 		reason: "Origin is not allowed.",
 		origin,
 		allowedOrigins: [...ALLOWED_CORS_ORIGINS],
 	};
-	response.end(JSON.stringify(message));
+	trace.endWith(403, {}, message);
+
 	return true;
 }
 
@@ -54,37 +50,47 @@ function requestListener(
 	incoming: http.IncomingMessage,
 	response: http.ServerResponse,
 ): void {
-	console.log("request:", incoming.method || "???", (incoming.url || "").substring(0, 120));
+	const trace = new handler.ReqContext(incoming, response);
 
-	if (handleCORS(incoming, response)) {
+	if (handleCORS(trace)) {
 		return;
 	}
 
 	if (incoming.url === "/health") {
+		trace.setHandler("/health");
+
 		const message = {
 			status: "healthy",
 		};
-		const string = v.serialize(message);
-		response.writeHead(200, { "content-length": string.length });
-		response.end(string);
+		trace.endWith(200, {}, message);
 		return;
 	} else if (!incoming.url) {
-		response.writeHead(405);
-		response.end();
+		trace.endWith(405, {}, {
+			code: 405,
+			reason: "Invalid url",
+		});
 		return;
 	} else if (incoming.url === "/auth/signup" && incoming.method === "POST") {
+		trace.setHandler("/auth/signup");
+
 		const h = handler.useHandler(implAuthSignup.requestValidator, implAuthSignup.handler);
-		return h(incoming, response);
+		return h(trace);
 	} else if (incoming.url === "/auth/login-challenge" && incoming.method === "POST") {
+		trace.setHandler("/auth/login-challenge");
+
 		const h = handler.useHandler(implAuthLoginChallenge.requestValidator, implAuthLoginChallenge.handler);
-		return h(incoming, response);
+		return h(trace);
 	} else if (incoming.url === "/auth/login" && incoming.method === "POST") {
+		trace.setHandler("/auth/login");
+
 		const h = handler.useHandler(implAuthLogin.requestValidator, implAuthLogin.handler);
-		return h(incoming, response);
+		return h(trace);
 	}
 
-	response.writeHead(404);
-	response.end("no handler for " + incoming.method + " " + incoming.url);
+	trace.endWith(404, {}, {
+		code: 404,
+		reason: "no handler for " + incoming.method + " " + incoming.url,
+	});
 }
 
 async function retrieveGCPMetadata(path: string) {
