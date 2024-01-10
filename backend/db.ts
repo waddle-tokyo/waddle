@@ -61,6 +61,7 @@ export type User = {
 		keyCredential: signupApi.KeyCredential,
 	},
 	inviterID: api.UserID,
+	debugPermission: boolean,
 };
 
 export const userValidator: v.Validator<User> = new v.Records({
@@ -95,6 +96,7 @@ export const userValidator: v.Validator<User> = new v.Records({
 		}),
 	}),
 	inviterID: v.userID,
+	debugPermission: v.booleans.optional().defaulting(false),
 });
 
 export function userForFriendsPath(userID: api.UserID) {

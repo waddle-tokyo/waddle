@@ -19,13 +19,16 @@ export const requestValidator: v.Validator<loginApi.Request> = new v.Records({
 	loginECDSASignature: v.hexBytes,
 });
 
-const loginChallenges = challenges.initializeLoginChallenges(config.auth.loginChallengeEcdsaSecretId);
+const loginChallengesPromise = challenges.initializeLoginChallenges(config.auth.loginChallengeEcdsaSecretId);
 
-export const handler: common.APIHandler<loginApi.Request, loginApi.Response> = async req => {
-	const verification = await (await loginChallenges).verifyChallenge(
-		req.request.username,
-		req.request.loginChallenge,
-	);
+export const handler: common.APIHandler<loginApi.Request, loginApi.Response> = async (req, trace) => {
+	const loginChallenges = await loginChallengesPromise;
+	const verification = await trace.measureTime("verifyChallenge", () => {
+		return loginChallenges.verifyChallenge(
+			req.request.username,
+			req.request.loginChallenge,
+		);
+	});
 
 	if (verification === "expired") {
 		return {
@@ -44,7 +47,9 @@ export const handler: common.APIHandler<loginApi.Request, loginApi.Response> = a
 	}
 
 	// Retrieve the public key associated with this login.
-	const users = await db.userByLoginUsername(req.request.username).get();
+	const users = await trace.measureTime("dbUserByUsername", () => {
+		return db.userByLoginUsername(req.request.username).get();
+	});
 	const userDoc = users.docs[0];
 	if (!userDoc) {
 		return {
@@ -87,14 +92,21 @@ export const handler: common.APIHandler<loginApi.Request, loginApi.Response> = a
 	const sessionID = v.toHexadecimal(sessionBytes);
 
 	const sessionExpires = new Date(Date.now() + LOGIN_EXPIRY_MS);
-	await db.loginSessionPath(sessionID).create({
-		userID,
-		loggedInAt: new Date(),
-		expires: sessionExpires,
-	} satisfies db.LoginSession);
+
+	await trace.measureTime("dbCreateLoginSession", () => {
+		return db.loginSessionPath(sessionID).create({
+			userID,
+			loggedInAt: new Date(),
+			expires: sessionExpires,
+		} satisfies db.LoginSession);
+	});
 
 	// Create a Firebase user token
-	const firebaseToken = await firebaseAuth.getAuth().createCustomToken(userID);
+	const firebaseToken = await trace.measureTime("firebaseCreateCustomToken", () => {
+		return firebaseAuth.getAuth().createCustomToken(userID);
+	});
+
+	trace.includeServerTiming ||= user.debugPermission;
 
 	return {
 		body: {
