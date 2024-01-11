@@ -11,10 +11,15 @@ export const requestValidator: v.Validator<loginChallengeApi.Request> = new v.Re
 	username: v.strings,
 });
 
-const loginChallenges = challenges.initializeLoginChallenges(config.auth.loginChallengeEcdsaSecretId);
+const loginChallengesPromise = challenges.initializeLoginChallenges(config.auth.loginChallengeEcdsaSecretId);
 
-export const handler: common.APIHandler<loginChallengeApi.Request, loginChallengeApi.Response> = async req => {
-	const userDocs = await db.userByLoginUsername(req.request.username).get();
+export const handler: common.APIHandler<loginChallengeApi.Request, loginChallengeApi.Response> = async (req, trace) => {
+	const loginChallenges = await loginChallengesPromise;
+
+	const userDocs = await trace.measureTime("dbRetrieveByUsername", () => {
+		return db.userByLoginUsername(req.request.username).get();
+	});
+
 	if (userDocs.empty) {
 		return {
 			body: {
@@ -26,7 +31,12 @@ export const handler: common.APIHandler<loginChallengeApi.Request, loginChalleng
 	const userDoc = userDocs.docs[0];
 	const user = db.userValidator.validate(userDoc.data(), [`firestore(username=${req.request.username})`]);
 
-	const challenge = await (await loginChallenges).createChallenge(req.request.username);
+	const challenge = await trace.measureTime("createChallenge", () => {
+		return loginChallenges.createChallenge(req.request.username)
+	});
+
+	trace.includeServerTiming = true;
+
 	return {
 		body: {
 			tag: "success",

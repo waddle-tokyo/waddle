@@ -53,6 +53,15 @@ export abstract class Validator<T> {
 	map<B>(f: (t: T) => B): Validator<B> {
 		return new Mapper(this, f);
 	}
+
+	defaulting(defaultValue: NonNullable<T>): Validator<NonNullable<T>> {
+		return this.map(value => {
+			if (value === undefined || value === null) {
+				return defaultValue;
+			}
+			return value;
+		});
+	}
 }
 
 export class ValidationError {
@@ -87,6 +96,17 @@ export class Strings extends Validator<string> {
 }
 
 export const strings = new Strings();
+
+export class Booleans extends Validator<boolean> {
+	validate(value: unknown, path: string[]): boolean {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		throw new ValidationError(path, "must be a boolean");
+	}
+}
+
+export const booleans = new Booleans();
 
 export class Numbers extends Validator<number> {
 	validate(value: unknown, path: string[]): number {

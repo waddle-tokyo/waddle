@@ -1,8 +1,106 @@
 import * as http from "node:http";
 
 import { Timestamp } from "firebase-admin/firestore";
+import { ulid } from "ulid";
 
 import * as v from "../apis/validator.js";
+
+export class ReqContext {
+	public readonly trace: string;
+	private handlerPath: string = "(redacted)";
+	public includeServerTiming: boolean = false;
+	private serverTimings: string[] = [];
+
+	constructor(
+		public incoming: http.IncomingMessage,
+		public response: http.ServerResponse,
+	) {
+		this.trace = ulid().toLowerCase();
+	}
+
+	prefix(): string {
+		return `${new Date().toISOString()} ${this.trace}:`;
+	}
+
+	log(...messages: string[]): void {
+		console.log(this.prefix() + "\t" + messages.join("\t"));
+	}
+
+	recordTime(name: string, millis: number) {
+		if (/^[a-zA-Z0-9]+$/.test(name)) {
+			throw new Error("illegal metric name");
+		}
+
+		this.serverTimings.push(`${name},dur=${millis.toFixed(1)}`);
+		this.log(name, "took", millis.toFixed(1), "ms");
+	}
+
+	serverTimingHeaders(): Record<string, string> {
+		if (this.includeServerTiming) {
+			return {
+				"server-timing": this.serverTimings.join(", "),
+			};
+		}
+		return {};
+	}
+
+	async measureTime<T>(name: string, work: () => Promise<T>): Promise<T> {
+		const before = performance.now();
+		try {
+			return await work();
+		} finally {
+			const after = performance.now();
+			this.recordTime(name, after - before);
+		}
+	}
+
+	setHandler(handlerPath: string): void {
+		this.handlerPath = handlerPath;
+		this.log("handling", handlerPath);
+	}
+
+	endWithEmpty(status: number, headers: Record<string, string>): void {
+		this.log(
+			"responding ",
+			status.toFixed(0),
+			"empty",
+			this.incoming.method || "?",
+			this.handlerPath,
+		);
+
+		this.response.writeHead(status, {
+			...this.serverTimingHeaders(),
+			...headers,
+		});
+		this.response.end();
+	}
+
+	endWith(
+		status: number,
+		headers: Record<string, string>,
+		response: v.Serializable
+	): void {
+		const serialized = v.serialize(response);
+
+		this.log(
+			"responding ",
+			status.toFixed(0),
+			"length",
+			serialized.length.toFixed(0),
+			"C",
+			this.incoming.method || "?",
+			this.handlerPath,
+		);
+
+		this.response.writeHead(status, {
+			...this.serverTimingHeaders(),
+			...headers,
+			"content-type": "application/json",
+			"content-length": new TextEncoder().encode(serialized).length,
+		});
+		this.response.end(serialized);
+	}
+}
 
 export class APIError extends Error {
 	constructor(
@@ -24,7 +122,7 @@ export const timestamps = new class TimestampValidator extends v.Validator<Times
 };
 
 export type APIHandler<Req, Resp extends v.Serializable> =
-	(req: APIRequest<Req>) => Promise<APIResponse<Resp>>;
+	(req: APIRequest<Req>, trace: ReqContext) => Promise<APIResponse<Resp>>;
 
 export type APIRequest<Req> = {
 	request: Req,
@@ -38,9 +136,9 @@ export type APIResponse<Resp extends v.Serializable> = {
 export function useHandler<Req, Resp extends v.Serializable>(
 	validator: v.Validator<Req>,
 	handler: APIHandler<Req, Resp>
-): (incoming: http.IncomingMessage, response: http.ServerResponse) => void {
-	return async (incoming: http.IncomingMessage, response: http.ServerResponse) => {
-		const bodyText = await getBodyText(incoming, {
+): (trace: ReqContext) => void {
+	return async (trace: ReqContext) => {
+		const bodyText = await getBodyText(trace.incoming, {
 			maxLengthBytes: 1024 * 1024,
 			maxTimeMillis: 2_000,
 		});
@@ -69,30 +167,21 @@ export function useHandler<Req, Resp extends v.Serializable>(
 
 			const responseObject = await handler({
 				request: validatedObject,
-			});
+			}, trace);
 
-			response.writeHead(200, {
-				"Content-Type": "application/json",
-				...responseObject.headers,
-			});
-			response.end(v.serialize(responseObject.body));
+			trace.endWith(200, responseObject.headers || {}, responseObject.body);
 		} catch (e: unknown) {
 			if (e instanceof APIError) {
-				response.writeHead(e.status, {
-					"Content-Type": "application/json",
-				});
-				response.end(v.serialize({
+				trace.endWith(e.status, {}, {
 					message: e.message,
 					path: e.path,
-				}));
+				});
 			} else {
 				console.error(e);
-				response.writeHead(500, {
-					"Content-Type": "application/json",
-				});
-				response.end(v.serialize({
+				trace.endWith(500, {}, {
+					code: 500,
 					message: "internal server error",
-				}));
+				});
 			}
 		}
 	};

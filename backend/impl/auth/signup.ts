@@ -45,7 +45,7 @@ export const requestValidator: v.Validator<signupApi.Request> = new v.Records({
 	})
 });
 
-export const handler: common.APIHandler<signupApi.Request, signupApi.Response> = async req => {
+export const handler: common.APIHandler<signupApi.Request, signupApi.Response> = async (req, trace) => {
 	const result = await db.db.runTransaction<
 		signupApi.ResponseProblem | { tag: "ok", ok: { userID: UserID, inviterID: UserID } }
 	>(async transaction => {
@@ -113,6 +113,7 @@ export const handler: common.APIHandler<signupApi.Request, signupApi.Response> =
 				keyCredential: req.request.login.keyCredential,
 			},
 			inviterID,
+			debugPermission: false,
 		} satisfies db.User);
 
 		transaction.create(db.userForFriendsPath(userID), {
@@ -129,6 +130,11 @@ export const handler: common.APIHandler<signupApi.Request, signupApi.Response> =
 
 	const inviterFriend = await db.userForFriendsPath(inviterID).get();
 	const inviterDisplayName = common.asString(inviterFriend.get("displayName"));
+
+	trace.includeServerTiming ||= v.booleans
+		.optional()
+		.defaulting(false)
+		.validate(inviterFriend.get("debugPermission"), []);
 
 	return {
 		body: {
