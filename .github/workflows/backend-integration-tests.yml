@@ -1,0 +1,17 @@
+name: "Backend Integration Tests"
+"on":
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: yarn run cloudbuild
+        working-directory: ./backend
+      - run: yarn install
+        working-directory: ./firestore
+      - run: yarn run integration-test
+        working-directory: ./firestore

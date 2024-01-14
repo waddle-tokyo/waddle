@@ -118,14 +118,14 @@ export class Handler extends handler.Handler<signupApi.Request, signupApi.Respon
 			// Create the user object
 			const userID: UserID = ulid() as UserID;
 			const inviterID = invitation.get("inviter") as UserID;
-			transaction.create(db.userPath(userID), {
+			transaction.create(db.userPath(userID), v.toPlainJSON({
 				login: {
 					username: req.request.login.username.toLowerCase(),
 					keyCredential: req.request.login.keyCredential,
 				},
 				inviterID,
 				debugPermission: false,
-			} satisfies db.User);
+			} satisfies db.User));
 
 			transaction.create(db.userForFriendsPath(userID), {
 				displayName: req.request.displayName,

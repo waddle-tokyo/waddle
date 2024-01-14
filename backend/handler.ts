@@ -27,8 +27,8 @@ export class ReqContext {
 	}
 
 	recordTime(name: string, millis: number) {
-		if (/^[a-zA-Z0-9]+$/.test(name)) {
-			throw new Error("illegal metric name");
+		if (!/^[a-zA-Z0-9]+$/.test(name)) {
+			throw new Error("illegal metric name `" + name + "`");
 		}
 
 		this.serverTimings.push(`${name},dur=${millis.toFixed(1)}`);

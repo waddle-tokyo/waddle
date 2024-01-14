@@ -90,6 +90,10 @@ export function specPredicate<T>(predicate: (t: T) => true | string[], descripti
 	};
 }
 
+export const anyString: Spec<string> = specPredicate(t => typeof t === "string" ? true : []);
+
+export const any: Spec<unknown> = specPredicate(t => true);
+
 export function specDescribe<T>(value: Spec<T>, description: string, path?: string): Spec<T> {
 	return {
 		[spec](test: T) {
