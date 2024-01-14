@@ -1,9 +1,13 @@
 import * as crypto from "node:crypto";
+import * as net from "node:net";
 
+import * as api from "../apis/defs.js";
 import * as configuration from "./configuration.js";
+import * as db from "./db.js";
 import { LoginChallenges } from "./impl/auth/challenges.js";
 import * as secrets from "./secrets.js";
 import * as server from "./server.js";
+import * as test from "./test.js";
 
 // This environment variable is provided by the
 // ```
@@ -36,6 +40,49 @@ async function generateLoginChallengeSecret(): Promise<Uint8Array> {
 	});
 
 	return new TextEncoder().encode(text);
+}
+
+async function createInvitationCode(): Promise<string> {
+	const invitationID = Math.random().toFixed(26).substring(2);
+	await db.invitationPath(invitationID).create({
+		expires: "2099-01-01T00:00:00Z" as api.Timestamp,
+		inviter: "FAKEUSERID" as api.UserID,
+		remainingUses: 1,
+	} satisfies db.Invitation);
+	return invitationID;
+}
+
+class Waddle {
+	private host: string;
+	private corsOrigin: string;
+
+	constructor(p: {
+		host: string,
+		corsOrigin: string,
+	}) {
+		this.host = p.host;
+		this.corsOrigin = p.corsOrigin;
+	}
+
+	async get(path: string, headers?: any): Promise<{ status: number, body: any }> {
+		if (!path.startsWith("/")) {
+			throw new Error("path must start with `/`, but was `" + path + "`");
+		}
+
+		const connection = await fetch(this.host + path, {
+			mode: "cors",
+			method: "GET",
+			headers: {
+				Accept: "application/json",
+				Origin: this.corsOrigin,
+				...headers,
+			},
+		});
+		return {
+			status: connection.status,
+			body: await connection.json(),
+		};
+	}
 }
 
 async function integrationTest() {
@@ -76,12 +123,32 @@ async function integrationTest() {
 	const s = new server.Server(endpoints, config.web, secretsClient);
 	const resource = await s.serveHttp();
 
-	console.log("finishing in one minute...");
-	setTimeout(() => {
-		console.log("done waiting");
+	const client = new Waddle({
+		host: "http://localhost:" + (resource.server.address() as net.AddressInfo).port,
+		corsOrigin: "http://session.domain",
+	});
 
-		resource.server.close();
-	}, 60e3);
+	// Verify that the health endpoint works as expected.
+	const health = await client.get("/health");
+	test.assert(health, "is equal to", {
+		status: 200,
+		body: {
+			status: "healthy",
+		},
+	});
+
+	// Verify that the 404 handler works as expected.
+	const error404 = await client.get("/404");
+	test.assert(error404, "is equal to", {
+		status: 404,
+		body: {
+			code: 404,
+			reason: "no handler for GET /404",
+		},
+	});
+
+	console.info("closing server");
+	resource.server.close();
 }
 
 integrationTest();
