@@ -8,6 +8,7 @@ import * as v from "../../../apis/validator.js";
 import * as configuration from "../../configuration.js";
 import * as db from "../../db.js";
 import * as handler from "../../handler.js";
+import * as secrets from "../../secrets.js";
 import * as challenges from "./challenges.js";
 
 
@@ -137,9 +138,13 @@ export class Handler extends handler.Handler<loginApi.Request, loginApi.Response
 	}
 
 	static async inject(p: {
+		secretsClient: secrets.SecretsClient,
 		config: configuration.Config,
 	}) {
-		const loginChallenges = await challenges.initializeLoginChallenges(p.config.auth.loginChallengeEcdsaSecretId);
+		const loginChallenges = await challenges.LoginChallenges.inject({
+			secretsClient: p.secretsClient,
+			authConfig: p.config.auth,
+		});
 		return new Handler(loginChallenges, p.config.auth);
 	}
 }

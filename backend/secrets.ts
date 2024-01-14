@@ -1,10 +1,15 @@
 import * as gcloudSecretManager from "@google-cloud/secret-manager";
 
-export class SecretsClient {
-	private secretManagerClient = new gcloudSecretManager.SecretManagerServiceClient();
+export interface SecretsClient {
+	fetchSecret(secretId: string): Promise<Uint8Array>;
+}
 
+export class GCPSecretsClient {
+	constructor(
+		private manager: gcloudSecretManager.SecretManagerServiceClient,
+	) { }
 	async fetchSecret(secretId: string): Promise<Uint8Array> {
-		const secretArr = await this.secretManagerClient.accessSecretVersion({
+		const secretArr = await this.manager.accessSecretVersion({
 			name: secretId + "/versions/latest",
 		});
 
@@ -20,5 +25,3 @@ export class SecretsClient {
 		return data;
 	}
 }
-
-export const secretsClient: SecretsClient = new SecretsClient();

@@ -3,3 +3,4 @@ compiled/
 node_modules/
 **/*.tsbuildinfo
 **/__
+**/*.log

@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 
 import * as secrets from "../../secrets.js";
 import * as v from "../../../apis/validator.js";
+import * as configuration from "../../configuration.js";
 
 export class LoginChallenges {
 	constructor(
@@ -68,26 +69,31 @@ export class LoginChallenges {
 			return "invalid";
 		}
 	}
-}
 
-export async function initializeLoginChallenges(loginChallengeEcdsaSecretId: string) {
-	const challengeSigningKeyPair = JSON.parse(
-		new TextDecoder()
-			.decode(await secrets.secretsClient.fetchSecret(loginChallengeEcdsaSecretId))
-	);
+	static async inject(
+		p: {
+			secretsClient: secrets.SecretsClient,
+			authConfig: configuration.Config["auth"],
+		},
+	) {
+		const challengeSigningKeyPairBytes = await p.secretsClient.fetchSecret(p.authConfig.loginChallengeEcdsaSecretId);
+		const challengeSigningKeyPair = JSON.parse(
+			new TextDecoder().decode(challengeSigningKeyPairBytes)
+		);
 
-	const challengeSigningKey = await crypto.subtle.importKey("jwk", challengeSigningKeyPair.private, {
-		name: "ECDSA",
-		namedCurve: "P-521",
-	}, false, ["sign"]);
+		const challengeSigningKey = await crypto.subtle.importKey("jwk", challengeSigningKeyPair.private, {
+			name: "ECDSA",
+			namedCurve: "P-521",
+		}, false, ["sign"]);
 
-	const challengeVerifyingKey = await crypto.subtle.importKey("jwk", challengeSigningKeyPair.public, {
-		name: "ECDSA",
-		namedCurve: "P-521",
-	}, false, ["verify"]);
+		const challengeVerifyingKey = await crypto.subtle.importKey("jwk", challengeSigningKeyPair.public, {
+			name: "ECDSA",
+			namedCurve: "P-521",
+		}, false, ["verify"]);
 
-	return new LoginChallenges({
-		signing: challengeSigningKey,
-		verifying: challengeVerifyingKey,
-	});
+		return new LoginChallenges({
+			signing: challengeSigningKey,
+			verifying: challengeVerifyingKey,
+		});
+	}
 }

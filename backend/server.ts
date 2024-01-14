@@ -1,9 +1,11 @@
 import * as http from "node:http";
 import * as https from "node:https";
+import * as net from "node:net";
 
 import * as v from "../apis/validator.js";
 import * as configuration from "./configuration.js";
 import * as handler from "./handler.js";
+import { LoginChallenges } from "./impl/auth/challenges.js";
 import * as implAuthLogin from "./impl/auth/login.js";
 import * as implAuthLoginChallenge from "./impl/auth/loginChallenge.js";
 import * as implAuthSignup from "./impl/auth/signup.js";
@@ -56,7 +58,8 @@ export class Server {
 			{ path: string, method: "POST" },
 			handler.Handler<unknown, v.Serializable>
 		>,
-		private webConfig: configuration.Config["web"]
+		private webConfig: configuration.Config["web"],
+		private secretsClient: secrets.SecretsClient,
 	) {
 		this.corsHandler = new CORSHandler(webConfig);
 	}
@@ -100,12 +103,21 @@ export class Server {
 		});
 	}
 
+	async serveHttp(): Promise<{ server: http.Server, port: number }> {
+		const server = http.createServer({}, (a, b) => this.handle(a, b));
+		server.listen();
+
+		const port = (server.address() as net.AddressInfo).port;
+		console.log("serving HTTP on port", port);
+		return { server, port };
+	}
+
 	async serveHttps(
 		port: number,
-	): Promise<void> {
+	): Promise<{ server: http.Server, port: number }> {
 		const certificateJson = JSON.parse(
 			new TextDecoder().decode(
-				await secrets.secretsClient.fetchSecret(this.webConfig.certificateSecretId)
+				await this.secretsClient.fetchSecret(this.webConfig.certificateSecretId)
 			)
 		);
 
@@ -117,10 +129,15 @@ export class Server {
 		const server = https.createServer(httpsServerOptions, (a, b) => this.handle(a, b));
 		server.listen(port);
 		console.log("serving HTTPS on port", port);
+		return { server, port };
 	}
 }
 
-export async function endpoints(config: configuration.Config): Promise<
+export async function endpoints(
+	config: configuration.Config,
+	secretsClient: secrets.SecretsClient,
+	loginChallenges: LoginChallenges,
+): Promise<
 	Map<{ path: string, method: "POST" }, handler.Handler<unknown, v.Serializable>>
 > {
 	const endpoints = new Map<
@@ -134,11 +151,11 @@ export async function endpoints(config: configuration.Config): Promise<
 	);
 	endpoints.set(
 		{ method: "POST", path: "/auth/login-challenge" },
-		await implAuthLoginChallenge.Handler.inject({ config }),
+		await implAuthLoginChallenge.Handler.inject({ config, loginChallenges }),
 	);
 	endpoints.set(
 		{ method: "POST", path: "/auth/login" },
-		await implAuthLogin.Handler.inject({ config }),
+		await implAuthLogin.Handler.inject({ config, secretsClient }),
 	);
 
 	return endpoints;

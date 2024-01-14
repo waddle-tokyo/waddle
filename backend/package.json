@@ -2,7 +2,8 @@
 	"scripts": {
 		"cloudbuild": "yarn install --dev && yarn run deployable",
 		"deployable": "tsc --version && tsc",
-		"serve": "node compiled/backend/main.js"
+		"serve": "node --enable-source-maps compiled/backend/main.js",
+		"integration-test": "node --trace-sigint --enable-source-maps compiled/backend/integrationTest.js"
 	},
 	"devDependencies": {
 		"typescript": "^5.3.2"

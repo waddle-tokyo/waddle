@@ -66,9 +66,8 @@ export class Handler extends handler.Handler<loginChallengeApi.Request, loginCha
 
 	static async inject(p: {
 		config: configuration.Config,
+		loginChallenges: challenges.LoginChallenges,
 	}) {
-		return new Handler(
-			await challenges.initializeLoginChallenges(p.config.auth.loginChallengeEcdsaSecretId),
-		);
+		return new Handler(p.loginChallenges);
 	}
 };

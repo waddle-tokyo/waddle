@@ -1,11 +1,14 @@
 import * as fs from "node:fs";
 
 import * as gcloudDns from "@google-cloud/dns";
+import * as gcloudSecretManager from "@google-cloud/secret-manager";
 
 import * as configuration from "./configuration.js";
+import * as secrets from "./secrets.js";
 import * as server from "./server.js";
 
 import { AnonDiscovery, anonDiscoveryPath } from "./db.js";
+import { LoginChallenges } from "./impl/auth/challenges.js";
 
 async function retrieveGCPMetadata(path: string) {
 	const projectIdResponse = await fetch("http://metadata.google.internal/computeMetadata/" + path, {
@@ -98,8 +101,18 @@ async function main() {
 	await discoveryPublisher.setup();
 	await discoveryPublisher.autoRefreshDiscovery();
 
-	const endpoints = await server.endpoints(config);
-	const s = new server.Server(endpoints, config.web);
+
+	const secretsClient = new secrets.GCPSecretsClient(
+		new gcloudSecretManager.SecretManagerServiceClient()
+	);
+
+	const loginChallenges = await LoginChallenges.inject({
+		secretsClient,
+		authConfig: config.auth,
+	});
+
+	const endpoints = await server.endpoints(config, secretsClient, loginChallenges);
+	const s = new server.Server(endpoints, config.web, secretsClient);
 	await s.serveHttps(443);
 }
 
