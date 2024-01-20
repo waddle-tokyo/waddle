@@ -1,10 +1,10 @@
 import * as firebase from "firebase-admin/app";
 import * as firestore from "firebase-admin/firestore";
 
-import * as api from "../apis/defs.js";
-import * as handler from "./handler.js";
-import * as v from "../apis/validator.js";
 import * as signupApi from "../apis/auth/signup.js";
+import * as api from "../apis/defs.js";
+import * as v from "../apis/validator.js";
+import * as handler from "./handler.js";
 
 firebase.initializeApp({
 	credential: firebase.applicationDefault(),

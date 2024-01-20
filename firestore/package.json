@@ -1,0 +1,9 @@
+{
+	"scripts": {
+		"integration-test": "npx firebase emulators:exec --ui --only auth,firestore --project demo-db \"yarn --cwd ../backend run integration-test\""
+	},
+	"dependencies": {
+		"firebase-tools": "^12"
+	},
+	"license": "UNLICENSED"
+}

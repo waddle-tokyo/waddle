@@ -27,8 +27,8 @@ export class ReqContext {
 	}
 
 	recordTime(name: string, millis: number) {
-		if (/^[a-zA-Z0-9]+$/.test(name)) {
-			throw new Error("illegal metric name");
+		if (!/^[a-zA-Z0-9]+$/.test(name)) {
+			throw new Error("illegal metric name `" + name + "`");
 		}
 
 		this.serverTimings.push(`${name},dur=${millis.toFixed(1)}`);
@@ -121,9 +121,6 @@ export const timestamps = new class TimestampValidator extends v.Validator<Times
 	}
 };
 
-export type APIHandler<Req, Resp extends v.Serializable> =
-	(req: APIRequest<Req>, trace: ReqContext) => Promise<APIResponse<Resp>>;
-
 export type APIRequest<Req> = {
 	request: Req,
 };
@@ -133,10 +130,16 @@ export type APIResponse<Resp extends v.Serializable> = {
 	headers?: Record<string, string>,
 };
 
+export abstract class Handler<Req, Resp extends v.Serializable> {
+	abstract validator(): v.Validator<Req>;
+
+	abstract handle(req: APIRequest<Req>, trace: ReqContext): Promise<APIResponse<Resp>>;
+}
+
 export function useHandler<Req, Resp extends v.Serializable>(
-	validator: v.Validator<Req>,
-	handler: APIHandler<Req, Resp>
+	handler: Handler<Req, Resp>,
 ): (trace: ReqContext) => void {
+	const validator = handler.validator();
 	return async (trace: ReqContext) => {
 		const bodyText = await getBodyText(trace.incoming, {
 			maxLengthBytes: 1024 * 1024,
@@ -165,7 +168,7 @@ export function useHandler<Req, Resp extends v.Serializable>(
 				throw e;
 			}
 
-			const responseObject = await handler({
+			const responseObject = await handler.handle({
 				request: validatedObject,
 			}, trace);
 

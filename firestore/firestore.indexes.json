@@ -1,0 +1,39 @@
+{
+	"indexes": [
+		{
+			"collectionGroup": "anon-discovery",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{
+					"fieldPath": "type",
+					"order": "ASCENDING"
+				},
+				{
+					"fieldPath": "expires",
+					"order": "ASCENDING"
+				}
+			]
+		}
+	],
+	"fieldOverrides": [
+		{
+			"collectionGroup": "invitations",
+			"fieldPath": "expires",
+			"ttl": true,
+			"indexes": [
+				{
+					"order": "ASCENDING",
+					"queryScope": "COLLECTION"
+				},
+				{
+					"order": "DESCENDING",
+					"queryScope": "COLLECTION"
+				},
+				{
+					"arrayConfig": "CONTAINS",
+					"queryScope": "COLLECTION"
+				}
+			]
+		}
+	]
+}

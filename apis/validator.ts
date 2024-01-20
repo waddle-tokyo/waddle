@@ -87,7 +87,7 @@ export class Strings extends Validator<string> {
 		if (typeof value === "string") {
 			return value;
 		}
-		throw new ValidationError(path, "must be a string");
+		throw new ValidationError(path, `must be a string (was ${typeof value})`);
 	}
 
 	regex(regex: RegExp, invalidMessage?: string) {
@@ -312,7 +312,7 @@ export const hexBytes: Validator<Uint8Array> = strings.regex(HEX_BYTES_REGEX).ma
 export const userID = strings.regex(/^[A-Z0-9]+$/, "invalid UserID") as Validator<UserID>;
 
 export type Serializable =
-	string | number | Date | Uint8Array | undefined
+	string | number | boolean | Date | Uint8Array | undefined
 	| Serializable[]
 	| { [field: string]: Serializable };
 
@@ -327,4 +327,8 @@ export function serialize(x: Serializable): string {
 		}
 		return value;
 	});
+}
+
+export function toPlainJSON(x: Serializable & object): Serializable & object {
+	return JSON.parse(serialize(x));
 }
