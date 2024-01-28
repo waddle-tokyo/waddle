@@ -87,8 +87,8 @@ signupButton.addEventListener("click", async () => {
 		name: "PBKDF2" as const,
 		hash: "SHA-512" as const,
 		salt: passwordSalt,
-		// OWASP recommendation for 2023:
-		iterations: 210_000,
+		// Roughly 4x OWASP recommendation for 2023:
+		iterations: 800_000,
 	};
 
 	const passwordBasedEncryptionKey = await window.crypto.subtle.deriveKey(

@@ -36,6 +36,7 @@ export class CORSHandler {
 
 			if (trace.incoming.method === "OPTIONS") {
 				trace.endWithEmpty(204, {});
+				return true;
 			}
 			return false;
 		}

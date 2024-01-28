@@ -63,8 +63,7 @@ async function generateSignInKeyPair(
 		name: "PBKDF2" as const,
 		hash: "SHA-512" as const,
 		salt: passwordSalt,
-		// OWASP recommendation for 2023:
-		iterations: 210_000,
+		iterations: 800_000,
 	};
 
 	const passwordBasedEncryptionKey = await crypto.subtle.deriveKey(
@@ -180,16 +179,21 @@ class Waddle {
 			},
 			body: serialized,
 		});
-		const responseText = await connection.json();
-		console.info("\t<- " + connection.status + " " + JSON.stringify(responseText));
+		const text = await connection.text();
+		const parsed = text === "" ? null : JSON.parse(text);
+		console.info("\t<- " + connection.status + " " + JSON.stringify(parsed));
 		return {
 			status: connection.status,
-			body: responseText,
+			body: parsed,
 		};
 	}
 
 	async get(path: string, headers?: any): Promise<{ status: number, body: any }> {
 		return await this.request("GET", path, undefined, headers);
+	}
+
+	async options(path: string, headers?: any): Promise<{ status: number, body: any }> {
+		return await this.request("OPTIONS", path, undefined, headers);
 	}
 
 	async post(path: string, requestBody: v.Serializable, headers?: any): Promise<{ status: number, body: any }> {
@@ -368,6 +372,15 @@ async function integrationTest() {
 			firebaseToken: test.anyString,
 		},
 	});
+
+	const notFoundOptionsResponse = await client.options("/404");
+	test.assert(notFoundOptionsResponse.status, "is equal to", 204);
+
+	const notFoundPostResponse = await client.post("/404", {});
+	test.assert(notFoundPostResponse.status, "is equal to", 404);
+
+	const notFoundGetResponse = await client.get("/404");
+	test.assert(notFoundGetResponse.status, "is equal to", 404);
 
 	console.info("closing server");
 	resource.server.close();
