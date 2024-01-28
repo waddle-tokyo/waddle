@@ -179,11 +179,12 @@ class Waddle {
 			},
 			body: serialized,
 		});
-		const responseText = await connection.json();
-		console.info("\t<- " + connection.status + " " + JSON.stringify(responseText));
+		const text = await connection.text();
+		const parsed = text === "" ? null : JSON.parse(text);
+		console.info("\t<- " + connection.status + " " + JSON.stringify(parsed));
 		return {
 			status: connection.status,
-			body: responseText,
+			body: parsed,
 		};
 	}
 
@@ -373,7 +374,7 @@ async function integrationTest() {
 	});
 
 	const notFoundOptionsResponse = await client.options("/404");
-	test.assert(notFoundOptionsResponse.status, "is equal to", 404);
+	test.assert(notFoundOptionsResponse.status, "is equal to", 204);
 
 	const notFoundPostResponse = await client.post("/404", {});
 	test.assert(notFoundPostResponse.status, "is equal to", 404);
