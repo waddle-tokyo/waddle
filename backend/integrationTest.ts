@@ -63,8 +63,7 @@ async function generateSignInKeyPair(
 		name: "PBKDF2" as const,
 		hash: "SHA-512" as const,
 		salt: passwordSalt,
-		// OWASP recommendation for 2023:
-		iterations: 210_000,
+		iterations: 800_000,
 	};
 
 	const passwordBasedEncryptionKey = await crypto.subtle.deriveKey(
