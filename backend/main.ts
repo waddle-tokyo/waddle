@@ -68,13 +68,16 @@ class DiscoveryPublisher {
 		}
 	}
 
-	async refreshDiscovery() {
-		return await anonDiscoveryPath(this.name).set({
+	async refreshDiscovery(): Promise<FirebaseFirestore.WriteResult> {
+		console.log("DiscoveryPublisher: refreshing discovery entry");
+		const result = await anonDiscoveryPath(this.name).set({
 			type: "api",
 			expires: new Date(Date.now() + this.expiresMillis),
 			version: "?v2",
 			domain: this.getDomain(),
 		} satisfies AnonDiscovery);
+		console.log("DiscoveryPublisher: successfully refreshed");
+		return result;
 	}
 }
 

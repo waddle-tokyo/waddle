@@ -24,7 +24,9 @@ export class CORSHandler {
 
 	handle(trace: handler.ReqContext): boolean {
 		const origin = trace.incoming.headers.origin || "";
-		if (this.allowedCorsOrigins.has(origin)) {
+		const originIsAllowed = this.allowedCorsOrigins.has(origin);
+		const thisEndpointAllowsAnyOrigin = ANY_ORIGIN_ALLOWED.has(trace.incoming.url || "");
+		if (originIsAllowed || thisEndpointAllowsAnyOrigin) {
 			const response = trace.response;
 			response.setHeader("access-control-allow-origin", origin);
 			response.setHeader("access-control-allow-methods", "POST, GET, OPTIONS, DELETE");
@@ -70,7 +72,7 @@ export class Server {
 	) {
 		const trace = new handler.ReqContext(incoming, response);
 
-		if (!ANY_ORIGIN_ALLOWED.has(trace.incoming.url || "") && this.corsHandler.handle(trace)) {
+		if (this.corsHandler.handle(trace)) {
 			return;
 		}
 
