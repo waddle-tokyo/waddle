@@ -334,7 +334,8 @@ async function integrationTest() {
 		body: {
 			tag: "created",
 			userID: test.specPredicate(t => typeof t === "string" || []),
-			inviter: { userID: "FAKEUSERID" },
+			// No inviter is returned because the user is not found after
+			// fetch the ID.
 		},
 	});
 

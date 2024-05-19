@@ -147,14 +147,18 @@ export class Handler extends handler.Handler<signupApi.Request, signupApi.Respon
 			.defaulting(false)
 			.validate(inviterFriend.get("debugPermission"), []);
 
+		const inviter = inviterDisplayName
+			? {
+				userID: inviterID,
+				displayName: inviterDisplayName,
+			}
+			: undefined;
+
 		return {
 			body: {
 				tag: "created",
 				userID,
-				inviter: {
-					userID: inviterID,
-					displayName: inviterDisplayName || undefined,
-				},
+				inviter,
 			},
 		};
 	}
