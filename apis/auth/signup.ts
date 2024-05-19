@@ -49,9 +49,9 @@ export type ResponseSuccess = {
 	tag: "created",
 	userID: api.UserID,
 
-	inviter: {
+	inviter?: {
 		userID: api.UserID,
-		displayName: string | undefined,
+		displayName: string,
 	},
 };
 

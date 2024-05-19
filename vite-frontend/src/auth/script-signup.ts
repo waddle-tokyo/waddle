@@ -186,7 +186,7 @@ signupButton.addEventListener("click", async () => {
 		if (body.tag === "created") {
 			submitResultMessage.className = "success";
 			submitResultMessage.textContent = "Your account has been created. Welcome!";
-			if (body.inviter.displayName) {
+			if (body.inviter) {
 				submitResultMessage.textContent += " We'll let " + body.inviter.displayName + " know you joined.";
 			}
 			return;
@@ -215,10 +215,10 @@ const vSignupResponse: v.Validator<signupApi.Response> = new v.Union<signupApi.R
 	new v.Records<signupApi.ResponseSuccess>({
 		tag: new v.LiteralString("created"),
 		userID: v.userID,
-		inviter: new v.Records({
+		inviter: v.optional(new v.Records({
 			userID: v.userID,
-			displayName: v.strings.optional(),
-		}),
+			displayName: v.strings,
+		})),
 	}),
 	new v.Records<signupApi.ResponseProblem>({
 		tag: new v.LiteralString("problem"),
